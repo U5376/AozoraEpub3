@@ -578,7 +578,7 @@ public class Epub3Writer
 				if (isKindle || ext.equals("jpeg")) ext = "jpg";
 				coverImageInfo.setId("0000");
 				coverImageInfo.setOutFileName("0000."+ext);
-				if (!ext.matches("^(png|jpg|jpeg|gif)$")) {
+				if (!ext.matches("^(png|jpg|jpeg|gif|webp)$")) {
 					LogAppender.println("表紙画像フォーマットエラー: "+bookInfo.coverFileName);
 					coverImageInfo = null;
 				} else {
@@ -612,6 +612,13 @@ public class Epub3Writer
 				if (!"txt".equals(srcExt)) {
 					String imageFileName = imageInfoReader.getImageFileName(bookInfo.coverImageIndex);
 					if (imageFileName != null) {
+						String webpFileName = imageFileName.replaceAll("\\.jpg$", ".webp");
+						ImageInfo webpInfo = imageInfoReader.getImageInfo(webpFileName);
+						if (webpInfo != null) {
+							imageFileName = webpFileName;
+							LogAppender.println("使用WebP封面: " + webpFileName);
+						}
+						
 						ImageInfo imageInfo = imageInfoReader.getImageInfo(imageFileName);
 						if (imageInfo != null) {
 							imageFileName = imageFileName.substring(archivePathLength);
@@ -622,6 +629,8 @@ public class Epub3Writer
 							}
 							imageInfo.setIsCover(true);
 							if (!this.imageInfos.contains(imageInfo)) this.imageInfos.add(imageInfo);
+						} else {
+							LogAppender.println("[WARN] 画像ファイルなし: " + imageFileName);
 						}
 					}
 				}
@@ -1103,7 +1112,26 @@ public class Epub3Writer
 			if (bookInfo.insertCoverPage && isCover) return null;
 			return "../"+IMAGES_PATH+outImageFileName;
 		} else {
-			LogAppender.warn(lineNum, "画像ファイルなし", srcImageFileName);
+			String webpFileName = srcImageFileName.replaceAll("\\.jpg$", ".webp");
+			ImageInfo webpInfo = this.imageInfoReader.getImageInfo(webpFileName);
+			if (webpInfo != null) {
+				LogAppender.println("使用WebP图片: " + webpFileName);
+				srcImageFileName = webpFileName;
+				imageInfo = webpInfo;
+				this.imageIndex++;
+				String imageId = decimalFormat.format(this.imageIndex);
+				this.imageInfos.add(imageInfo);
+				this.outImageFileNames.add(srcImageFileName);
+				if (this.imageIndex-1 == this.bookInfo.coverImageIndex) {
+					isCover = true;
+				}
+				String outImageFileName = imageId+"."+imageInfo.getExt().replaceFirst("jpeg", "jpg");
+				imageInfo.setId(imageId);
+				imageInfo.setOutFileName(outImageFileName);
+				return "../"+IMAGES_PATH+outImageFileName;
+			} else {
+				LogAppender.warn(lineNum, "画像ファイルなし", srcImageFileName);
+			}
 		}
 		return null;
 	}
