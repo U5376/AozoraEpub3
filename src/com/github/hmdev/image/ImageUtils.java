@@ -109,12 +109,24 @@ public class ImageUtils
 	static public BufferedImage readImage(String ext, InputStream is) throws IOException
 	{
 		BufferedImage image;
-			try {
-				image = ImageIO.read(is);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+		try {
+			// 显式注册WebP格式
+			if ("webp".equals(ext.toLowerCase())) {
+				Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("webp");
+				if (readers.hasNext()) {
+					ImageReader reader = readers.next();
+					reader.setInput(ImageIO.createImageInputStream(is));
+					image = reader.read(0);
+					reader.dispose();
+					return image;
+				}
 			}
-		is.close();
+			image = ImageIO.read(is);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		} finally {
+			is.close();
+		}
 		return image;
 	}
 
@@ -425,6 +437,18 @@ public class ImageUtils
 			} else {
 				imageWriter.write(srcImage);
 			}
+		} else if ("webp".equals(ext)) {
+			try {
+				ImageWriter imageWriter = getWebpImageWriter();
+				imageWriter.setOutput(ImageIO.createImageOutputStream(zos));
+				imageWriter.write(srcImage);
+			} catch (Exception e) {
+				// WebP处理失败，直接写入原始图像数据
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ImageIO.write(srcImage, "png", baos);
+				baos.writeTo(zos);
+				LogAppender.println("WebP转换失败，已回退到PNG格式");
+			}
 		} else {
 			ImageIO.write(srcImage, ext, zos);
 		}
@@ -447,6 +471,14 @@ public class ImageUtils
 		Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
 		jpegImageWriter = writers.next();
 		return jpegImageWriter;
+	}
+	
+	static private ImageWriter getWebpImageWriter()
+	{
+		if (webpImageWriter != null) return webpImageWriter;
+		Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("webp");
+		webpImageWriter = writers.next();
+		return webpImageWriter;
 	}
 
 	/** 余白の画素数取得  左右のみずれ調整

@@ -578,7 +578,7 @@ public class Epub3Writer
 				if (isKindle || ext.equals("jpeg")) ext = "jpg";
 				coverImageInfo.setId("0000");
 				coverImageInfo.setOutFileName("0000."+ext);
-				if (!ext.matches("^(png|jpg|jpeg|gif)$")) {
+				if (!ext.matches("^(png|jpg|jpeg|gif|webp)$")) {
 					LogAppender.println("表紙画像フォーマットエラー: "+bookInfo.coverFileName);
 					coverImageInfo = null;
 				} else {
