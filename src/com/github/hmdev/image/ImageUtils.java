@@ -22,6 +22,7 @@ import java.util.Iterator;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 
@@ -45,6 +46,17 @@ public class ImageUtils
 	static ImageWriter pngImageWriter;
 	/** jpeg出力用 */
 	static ImageWriter jpegImageWriter;
+	/** webp出力用 */
+	static ImageWriter webpImageWriter;
+
+	static {
+		// 注册WebP图像编解码器
+		Iterator<ImageReader> webpReaders = ImageIO.getImageReadersByFormatName("webp");
+		if (!webpReaders.hasNext()) {
+			// 确保WebP插件已加载
+			ImageIO.scanForPlugins();
+		}
+	}
 
 	/** 4bitグレースケール時のRGB階調カラーモデル取得 */
 	static ColorModel getGray16ColorModel()
