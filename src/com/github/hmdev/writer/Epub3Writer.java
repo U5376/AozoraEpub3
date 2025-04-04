@@ -583,26 +583,8 @@ public class Epub3Writer
 					coverImageInfo = null;
 				} else {
 					if ("webp".equals(ext)) {
-						try {
-							ByteArrayInputStream testBais = new ByteArrayInputStream(coverImageBytes);
-							BufferedImage testImg = ImageUtils.readImage("webp", testBais);
-							testBais.close();
-							if (testImg == null) {
-								String origExt = bookInfo.coverFileName.substring(bookInfo.coverFileName.lastIndexOf('.')+1).toLowerCase();
-								if (!"webp".equals(origExt)) {
-									ext = origExt;
-									coverImageInfo.setExt(ext);
-									LogAppender.println("WebP読み込み失敗，元のフォーマットを使用: "+origExt);
-								}
-							}
-						} catch (Exception e) {
-							String origExt = bookInfo.coverFileName.substring(bookInfo.coverFileName.lastIndexOf('.')+1).toLowerCase();
-							if (!"webp".equals(origExt)) {
-								ext = origExt;
-								coverImageInfo.setExt(ext);
-								LogAppender.println("WebP読み込み例外，元のフォーマットを使用: "+origExt);
-							}
-						}
+						// WebP形式の表紙画像を直接使用
+						LogAppender.println("WebP形式の表紙を使用: "+bookInfo.coverFileName);
 					}
 					coverImageInfo.setIsCover(true);
 					this.imageInfos.addFirst(coverImageInfo);
