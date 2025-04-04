@@ -100,8 +100,23 @@ public class ImageUtils
 				if (!file.exists()) return null;
 				is = new BufferedInputStream(new FileInputStream(file), 8192);
 			}
-			return readImage(path.substring(path.lastIndexOf('.')+1).toLowerCase(), is);
-		} catch (Exception e) { return null; }
+			// 保存原始文件数据
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			is.transferTo(baos);
+			byte[] imageData = baos.toByteArray();
+			
+			try (ByteArrayInputStream bais = new ByteArrayInputStream(imageData)) {
+				BufferedImage image = readImage(path.substring(path.lastIndexOf('.')+1).toLowerCase(), bais);
+				if (image != null) return image;
+			}
+			
+			// 读取失败时返回原始数据构建的图像
+			try (ByteArrayInputStream bais = new ByteArrayInputStream(imageData)) {
+				return ImageIO.read(bais);
+			}
+		} catch (Exception e) { 
+			return null; 
+		}
 	}
 
 	final static AffineTransform NO_TRANSFORM = AffineTransform.getTranslateInstance(0, 0);
@@ -150,6 +165,17 @@ public class ImageUtils
 			int autoMarginLimitH, int autoMarginLimitV, int autoMarginWhiteLevel, float autoMarginPadding, int autoMarginNombre, float nombreSize) {
 		try {
 		String ext = imageInfo.getExt();
+		
+		if ("webp".equals(ext)) {
+			if (srcImage == null) {
+				is.transferTo(zos);
+				LogAppender.println("WebP画像を直接保存: " + imageInfo.getOutFileName());
+			} else {
+				LogAppender.println("WebP画像の処理をスキップ: " + imageInfo.getOutFileName());
+			}
+			zos.flush();
+			return;
+		}
 
 		int imgW = imageInfo.getWidth();
 		int imgH = imageInfo.getHeight();
@@ -443,11 +469,7 @@ public class ImageUtils
 				imageWriter.setOutput(ImageIO.createImageOutputStream(zos));
 				imageWriter.write(srcImage);
 			} catch (Exception e) {
-				// WebP处理失败，直接写入原始图像数据
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ImageIO.write(srcImage, "png", baos);
-				baos.writeTo(zos);
-				LogAppender.println("WebP转换失败，已回退到PNG格式");
+				throw new IOException("WebP处理失败: " + e.getMessage());
 			}
 		} else {
 			ImageIO.write(srcImage, ext, zos);
