@@ -898,13 +898,14 @@ public class JConfirmDialog extends JDialog
 				bookInfo.coverImage = imageInfoReader.getImage(bookInfo.coverImageIndex);
 			}
 			if (bookInfo.coverImage == null) {
-				if (bookInfo.coverFileName == null) {
-					String srcPath = srcFile.getParent();
-					File coverFile = new File(srcPath+"/cover.png");
-					if (!coverFile.exists()) coverFile = new File(srcPath+"/cover.jpg");
-					if (!coverFile.exists()) coverFile = new File(srcPath+"/cover.jpeg");
-					if (coverFile.exists()) bookInfo.coverFileName = coverFile.getAbsolutePath();
-				}
+			if (bookInfo.coverFileName == null) {
+				String srcPath = srcFile.getParent();
+				File coverFile = new File(srcPath+"/cover.png");
+				if (!coverFile.exists()) coverFile = new File(srcPath+"/cover.jpg");
+				if (!coverFile.exists()) coverFile = new File(srcPath+"/cover.jpeg");
+				if (!coverFile.exists()) coverFile = new File(srcPath+"/cover.webp");
+				if (coverFile.exists()) bookInfo.coverFileName = coverFile.getAbsolutePath();
+			}
 				if (bookInfo.coverFileName != null) {
 					bookInfo.loadCoverImage(bookInfo.coverFileName);
 					bookInfo.coverImageIndex = -1;

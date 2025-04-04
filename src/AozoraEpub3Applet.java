@@ -711,7 +711,7 @@ public class AozoraEpub3Applet extends JFrame
 		jLabelMaxCoverLine.setBorder(padding2H);
 		panel.add(jLabelMaxCoverLine);
 
-		jComboCover = new JComboBox<String>(new String[]{"[先頭の挿絵]", "[入力ファイル名と同じ画像(png,jpg)]", "[表紙無し]", "http://","[SVG表紙生成]"});
+		jComboCover = new JComboBox<String>(new String[]{"[先頭の挿絵]", "[入力ファイル名と同じ画像(png,jpg,webp)]", "[表紙無し]", "http://","[SVG表紙生成]"});
 		jComboCover.setEditable(true);
 		jComboCover.setPreferredSize(new Dimension(320, 24));
 		jComboCover.addActionListener(arg0 -> {
