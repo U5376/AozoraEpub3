@@ -1319,20 +1319,4 @@ public class Epub3Writer
 		return GAIJI_PATH;
 	}
 
-    /**
-     * 直接输出为HTML/XHTML文件（简单包装，调用write方法）
-     */
-    public void writeHtml(
-        AozoraEpub3Converter converter,
-        BufferedReader src,
-        File srcFile,
-        String srcExt,
-        File outFile,
-        BookInfo bookInfo,
-        ImageInfoReader imageInfoReader,
-        boolean vertical
-    ) throws Exception {
-        // vertical参数可用于设置converter.vertical，但本项目通常在外部已设置
-        this.write(converter, src, srcFile, srcExt, outFile, bookInfo, imageInfoReader);
-    }
 }
