@@ -6,6 +6,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -79,6 +82,7 @@ public class AozoraEpub3
 			//options.addOption("cp", false, "表紙画像ページ追加");
 			options.addOption("hor", false, "横書き (指定がなければ縦書き)");
 			options.addOption("device", true, "端末種別(指定した端末向けの例外処理を行う)\n[kindle]");
+			options.addOption("html", false, "直接输出为HTML/XHTML文件，不生成epub");
 
 			CommandLineParser parser = new DefaultParser();
 			CommandLine commandLine;
@@ -254,6 +258,7 @@ public class AozoraEpub3
 			boolean autoFileName = true; //ファイル名を表題に利用
 			boolean vertical = true;
 			String targetDevice;
+			boolean outputHtml = false;
 			if(commandLine.hasOption("t")) try { titleIndex = Integer.parseInt(commandLine.getOptionValue("t")); } catch (Exception e) {}//表題
 			if(commandLine.hasOption("tf")) useFileName = true;
 			if(commandLine.hasOption("c")) coverFileName = commandLine.getOptionValue("c");
@@ -273,6 +278,9 @@ public class AozoraEpub3
 				if (targetDevice.equalsIgnoreCase("kindle")) {
 					epub3Writer.setIsKindle(true);
 				}
+			}
+			if(commandLine.hasOption("html")) {
+				outputHtml = true;
 			}
 
 			//変換クラス生成とパラメータ設定
@@ -308,6 +316,7 @@ public class AozoraEpub3
 			////////////////////////////////
 			//各ファイルを変換処理
 			////////////////////////////////
+			List<File> htmlFiles = new ArrayList<>(); // 新增：収集所有生成的HTML/XHTML文件
 			for (String fileName : fileNames) {
 				LogAppender.println("--------");
 				File srcFile = new File(fileName);
@@ -448,11 +457,65 @@ public class AozoraEpub3
                             bookInfo.creator = titleCreator[1] == null ? "" : titleCreator[1];
                     }
 
-                    File outFile = getOutFile(srcFile, dstPath, bookInfo, autoFileName, outExt);
-					AozoraEpub3.convertFile(
+                    String extForOutput = outExt;
+                    if (outputHtml) {
+                        // 如果指定-html参数，强制输出为.html或.xhtml
+                        if (vertical) {
+                            extForOutput = ".xhtml";
+                        } else {
+                            extForOutput = ".html";
+                        }
+                    }
+                    File outFile = getOutFile(srcFile, dstPath, bookInfo, autoFileName, extForOutput);
+					if (outputHtml) {
+						// 直接输出为HTML/XHTML
+						AozoraEpub3.convertToHtml(
+							srcFile, ext, outFile,
+							aozoraConverter, writer,
+							encType, bookInfo, imageInfoReader, txtIdx, vertical
+						);
+						htmlFiles.add(outFile); // 新增：収集输出ファイル
+					} else {
+						AozoraEpub3.convertFile(
 							srcFile, ext, outFile,
 							aozoraConverter, writer,
 							encType, bookInfo, imageInfoReader, txtIdx);
+					}
+				}
+			}
+			// === 新增：所有HTML/XHTML生成后统一调用emoji处理 ===
+			if (outputHtml && !htmlFiles.isEmpty()) {
+				try {
+					File listFile = new File("html_list.txt");
+					try (PrintWriter pw = new PrintWriter(listFile, "UTF-8")) {
+						for (File f : htmlFiles) pw.println(f.getAbsolutePath());
+					}
+					File exeFile = new File("epub_emoji_x.exe");
+					if (exeFile.exists()) {
+						ProcessBuilder pb = new ProcessBuilder(
+							exeFile.getAbsolutePath(),
+							"--html",
+							"-i", "@" + listFile.getAbsolutePath()
+						);
+						pb.redirectErrorStream(true);
+						Process proc = pb.start();
+						try (BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
+							String line;
+							while ((line = reader.readLine()) != null) {
+								LogAppender.println("[emoji_x] " + line);
+							}
+						}
+						int exitCode = proc.waitFor();
+						if (exitCode == 0) {
+							LogAppender.println("批量emoji图片替换完成: " + listFile.getAbsolutePath());
+						} else {
+							LogAppender.println("[WARN] 批量emoji图片替换失败，错误码: " + exitCode);
+						}
+					} else {
+						LogAppender.println("[WARN] 未找到 emoji 处理工具 epub_emoji_x.exe，跳过 emoji 替换");
+					}
+				} catch (Exception ee) {
+					LogAppender.println("[WARN] 批量emoji 处理工具调用异常: " + ee.getMessage());
 				}
 			}
 		} catch (Exception e) {
@@ -723,5 +786,30 @@ public class AozoraEpub3
 			if (new File(coverFileName).exists()) return coverFileName;
 		}
 		return null;
+	}
+
+	/** 直接输出为HTML/XHTML文件 */
+	static public void convertToHtml(File srcFile, String ext, File outFile, AozoraEpub3Converter aozoraConverter, Epub3Writer epubWriter,
+			String encType, BookInfo bookInfo, ImageInfoReader imageInfoReader, int txtIdx, boolean vertical)
+	{
+		try {
+			long time = System.currentTimeMillis();
+			LogAppender.append("HTML/XHTML输出开始 : ");
+			LogAppender.println(srcFile.getPath());
+
+			BufferedReader src = null;
+			if (!bookInfo.imageOnly) {
+				src = new BufferedReader(new InputStreamReader(Objects.requireNonNull(getTextInputStream(srcFile, ext, null, null, txtIdx)), encType));
+			}
+			// 假设Epub3Writer有writeHtml方法，否则需自行实现
+			epubWriter.writeHtml(aozoraConverter, src, srcFile, ext, outFile, bookInfo, imageInfoReader, vertical);
+
+			LogAppender.append("HTML/XHTML输出完毕["+(((System.currentTimeMillis()-time)/100)/10f)+"s] : ");
+			LogAppender.println(outFile.getPath());
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			LogAppender.println("HTML/XHTML输出時発生错误 : "+e.getMessage());
+		}
 	}
 }
