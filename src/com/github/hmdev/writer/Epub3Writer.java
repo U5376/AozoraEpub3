@@ -123,7 +123,13 @@ public class Epub3Writer
 	/** コピーのみのファイル */
 	final static String[] TEMPLATE_FILE_NAMES_STANDARD = new String[]{
 			"META-INF/container.xml",
+			OPS_PATH+CSS_PATH+"font.css",
+			OPS_PATH+CSS_PATH+"aozora.css",
+			OPS_PATH+CSS_PATH+"fixed-layout-jp.css",
 			OPS_PATH+CSS_PATH+"book-style.css",
+			OPS_PATH+CSS_PATH+"style-reset.css",
+			OPS_PATH+CSS_PATH+"style-standard.css",
+			OPS_PATH+CSS_PATH+"style-advance.css",
 		};
 
 	String[] getTemplateFiles()
