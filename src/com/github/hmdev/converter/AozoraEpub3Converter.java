@@ -3229,6 +3229,13 @@ public class AozoraEpub3Converter
 		//すべて空白は空行にする
 		if (CharUtils.isSpace(line)) { line = ""; length = 0; }
 
+        // 改ページ先頭の空行を除去する
+        if (this.pageBreakTrigger != null && length == 0) {
+            // 改ページ直後の空行は出力しない
+            buf.setLength(0);
+            return;
+        }
+
 		int idIdx = 1;
 		String chapterId = null;
 
