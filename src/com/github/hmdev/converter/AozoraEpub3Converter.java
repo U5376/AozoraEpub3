@@ -3327,9 +3327,9 @@ public class AozoraEpub3Converter
 		if (this.printEmptyLines > 0) {
 			String br = chukiMap.get("改行")[0];
 			int lines = Math.min(this.maxEmptyLine, this.printEmptyLines-this.removeEmptyLine);
-			//見出し後3行以内開始の空行は1行は残す
+			//見出し後空行は最大1行に制限する
 			if (lastChapterLine >= lineNum-this.printEmptyLines-2) {
-				lines = Math.max(1, lines);
+				lines = Math.min(lines, 1);
 			}
 			for (int i=lines-1; i>=0; i--) {
 				out.write("<p>");
